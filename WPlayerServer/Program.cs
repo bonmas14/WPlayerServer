@@ -5,6 +5,7 @@ using System.Net;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
+using System.Runtime.CompilerServices;
 
 namespace WPlayerServer
 {
@@ -12,26 +13,40 @@ namespace WPlayerServer
     {
         const string configFile = "config.txt";
 
-        static IPAddress addres;
-        static string    directory;
-        static int       port;
+        public static IPAddress address;
+        public static string    directory;
+        public static int       port;
+
+        static string[]  music;
 
         static void Main(string[] args)
         {
+            Execute();
+            Console.ReadKey();
+        }
 
-            // проверка наличия конфига
-            if (!Directory.Exists(configFile))
+        private static void Execute()
+        {
+            StreamReader reader;
+            try
+            {
+                // Чтение конфига
+                reader = new StreamReader(configFile);
+            }
+            catch (FileNotFoundException)
             {
                 CreateConfig();
-                return;
             }
-            // Чтение конфига
-            StreamReader reader = new StreamReader(configFile);
+            finally
+            {
+                reader = new StreamReader(configFile);
+            }
+
 
             try
             {
-                addres    = IPAddress.Parse(reader.ReadLine());
-                port      = int.Parse(reader.ReadLine());
+                address = IPAddress.Parse(reader.ReadLine());
+                port = int.Parse(reader.ReadLine());
                 directory = reader.ReadLine();
             }
             catch (Exception e)
@@ -50,6 +65,64 @@ namespace WPlayerServer
             }
 
             // Вытаскивание папки с музыкой
+
+            string[] data = Directory.GetFiles(directory);
+
+            List<string> musicFiles = new List<string>();
+
+            for (int i = 0; i < data.Length; i++)
+            {
+                if (data[i].EndsWith(".ogg"))
+                {
+                    musicFiles.Add(data[i]);
+                }
+            }
+
+            music = musicFiles.ToArray();
+
+            if (music.Length == 0)
+            {
+                Console.WriteLine("Нет музыки!");
+                return;
+            }
+
+            
+                HttpListen();
+        }
+
+        private static void HttpListen()
+        {
+            Console.WriteLine("Открытие соединения");
+
+            HttpListener listener = new HttpListener();
+
+            for (int i = 0; i < music.Length; i++)
+            {
+                listener.Prefixes.Add($"http://{address}:{port}/{i}/");
+                listener.Prefixes.Add($"http://{address}:{port}/audio/{i}/");
+            }
+
+            listener.Start();
+            
+            Console.WriteLine("Приём запросов на адресе: " + address.ToString());
+            try
+            {
+                while (true)
+                {
+                    ClientObject clientObject = new ClientObject(listener.GetContext(), music);
+                    Task task = new Task(clientObject.Process);
+
+                    task.Start();
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+            }
+            finally
+            {
+                listener.Stop();
+            }
         }
 
         static void CreateConfig()
