@@ -50,7 +50,7 @@ namespace WPlayerServer
             {
                 Console.Write("отправка музыки ");
                 data = data.Substring(6);
-                Console.Write(data);
+                Console.WriteLine(data);
                 index = int.Parse(data);
                 Console.WriteLine(index);
                 BinaryReader reader = new BinaryReader(new StreamReader(music[index]).BaseStream);
