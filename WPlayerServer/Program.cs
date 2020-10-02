@@ -132,7 +132,7 @@ namespace WPlayerServer
             StreamWriter writer = new StreamWriter(configFile);
 
             writer.WriteLine("127.0.0.1");
-            writer.WriteLine("8888");
+            writer.WriteLine("80");
             writer.WriteLine("C:\\Users\\userName\\Music");
 
             writer.Close();
