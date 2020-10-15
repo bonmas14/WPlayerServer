@@ -6,7 +6,7 @@ using System.IO;
 using System.Text;
 using System.Threading.Tasks;
 using System.Runtime.CompilerServices;
-
+//Copyright (c) 2020 BonMAS14
 namespace WPlayerServer
 {
     class Program
