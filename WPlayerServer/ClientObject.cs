@@ -5,7 +5,7 @@ using System.Linq;
 using System.Net;
 using System.Text;
 using System.Threading.Tasks;
-
+//Copyright (c) 2020 BonMAS14
 namespace WPlayerServer
 {
     public class ClientObject
