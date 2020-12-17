@@ -13,6 +13,12 @@ namespace WPlayerServer
         public HttpListenerContext context;
         public string[] music;
 
+        public static string[] avalablePath =
+        {
+            "/audio/"
+        };
+
+
         public ClientObject(HttpListenerContext context, string[] music)
         {
             this.context = context;
@@ -26,66 +32,66 @@ namespace WPlayerServer
             HttpListenerRequest request   = context.Request;
             HttpListenerResponse response = context.Response;
 
-            string data = request.Url.AbsoluteUri;
+            string dataPath = request.Url.AbsolutePath;
 
-            int i = data.IndexOf('/') + 1;
+            Console.WriteLine(dataPath);
 
-            data = data.Substring(i);
-            i = data.IndexOf('/') + 1;
+            string serverRespToClient;
 
-            data = data.Substring(i);
-            i = data.IndexOf('/') + 1;
-
-            data = data.Substring(i);
-
-            Console.WriteLine(data);
-
-            string resp;
-
-            byte[] buffer;
+            byte[] sendBuffer;
 
             int index;
 
-            if (data.StartsWith("audio/"))
+            if (dataPath.StartsWith(avalablePath[0]))
             {
-                Console.Write("отправка музыки ");
-                data = data.Substring(6);
-                Console.WriteLine(data);
-                index = int.Parse(data);
-                Console.WriteLine(index);
-                BinaryReader reader = new BinaryReader(new StreamReader(music[index]).BaseStream);
+                Console.WriteLine("отправка музыки...");
 
-                Console.WriteLine(reader.BaseStream.Length);
+                index = int.Parse(dataPath.Substring(avalablePath[0].Length));
+                
+                Console.WriteLine("Индекс музыки: " + index);
 
-                buffer = reader.ReadBytes((int)reader.BaseStream.Length);
-                reader.Close();
+                BinaryReader musicReader = new BinaryReader(new StreamReader(music[index]).BaseStream);
+
+                Console.WriteLine(musicReader.BaseStream.Length);
+
+                sendBuffer = musicReader.ReadBytes((int)musicReader.BaseStream.Length);
+
+                musicReader.Close();
+
+                response.ContentType = "audio/ogg";
             }
             else
             {
-                index = int.Parse(data);
+                index = int.Parse(dataPath.Substring(1));
                 int nextIndex = 0;
                 if (index < music.Length - 1)
                 {
                     nextIndex = index + 1;
                 }
 
-                resp = $"<html><head><meta charset=\'utf8\' />" +
-                    $"</head><body><audio autoplay controls>" +
-                    $"<source src=\"http://{Program.address}:{Program.port}/audio/{index}\" type=\"audio/ogg\">" +
-                    $"</audio> " +
-                    $"<a href=\"http://{Program.address}:{Program.port}/{nextIndex}\"> Следующая музыка </a></body></html>";
-                buffer = Encoding.UTF8.GetBytes(resp);
+                serverRespToClient = 
+                    $"<html>" +
+                        $"<head>" +
+                            $"<meta charset=\'utf8\' />" +
+                        $"</head>" +
+                        $"<body>" +
+                            $"<audio autoplay controls>" +
+                                $"<source src=\"http://{Program.address}:{Program.port}/audio/{index}\" type=\"audio/ogg\">" +
+                            $"</audio> " +
+                            $"<a href=\"http://{Program.address}:{Program.port}/{nextIndex}\"> Следующая музыка </a>" +
+                        $"</body>" +
+                    $"</html>";
+
+                sendBuffer = Encoding.UTF8.GetBytes(serverRespToClient);
             }
 
-            Console.WriteLine(index);
+            Console.WriteLine("Длина отправляемого пакета: " + sendBuffer.Length);
 
-            Console.WriteLine("Длина отправляемого пакета: " + buffer.Length);
-
-            response.ContentLength64 = buffer.Length;
+            response.ContentLength64 = sendBuffer.Length;
 
             using (Stream stream = response.OutputStream)
             {
-                stream.Write(buffer, 0, buffer.Length);
+                stream.Write(sendBuffer, 0, sendBuffer.Length);
             }
         }
     }
